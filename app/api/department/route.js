@@ -1,9 +1,12 @@
 import { Pool } from "pg";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
+
+const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY);
 
 export async function GET(req) {
   try {
@@ -11,7 +14,6 @@ export async function GET(req) {
     const department = searchParams.get("department");
     const clubName = searchParams.get("club_name");
 
-    // Validate inputs
     if (!department || !clubName) {
       return new Response(
         JSON.stringify({ error: "Missing department or club name" }),
@@ -19,7 +21,6 @@ export async function GET(req) {
       );
     }
 
-    // Fetch clubId from the ClubEmail table
     const clubResult = await pool.query(
       `SELECT id FROM "ClubEmail" WHERE "clubName" = $1`,
       [clubName]
@@ -33,7 +34,6 @@ export async function GET(req) {
 
     const clubId = clubResult.rows[0].id;
 
-    // Fetch department data with summarized feedback
     const result = await pool.query(
       `
       SELECT ua."userEmail", ce."clubName", mi."jobPosition" AS department, 
@@ -49,16 +49,25 @@ export async function GET(req) {
       `,
       [clubId, department]
     );
-    // Summarize feedback into ~5-6 lines
-    const formattedData = result.rows.map((item) => {
-      console.log("Row Data:", row); // Log entire row to check missing values
-      console.log("Feedback Value:", row.feedback); // Check if feedback is undefined
-      const words = item.allFeedback.split(" ");
-      const summarizedFeedback =
-        words.length > 50 ? words.slice(0, 50).join(" ") + "..." : item.allFeedback;
 
-      return { ...item, feedback: summarizedFeedback };
-    });
+    const formattedData = await Promise.all(
+      result.rows.map(async (item) => {
+        const feedbackText =
+          item.allfeedback && item.allfeedback.trim() !== ""
+            ? item.allfeedback
+            : "No feedback provided";
+
+        // Use Gemini to summarize feedback
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const gptResponse = await model.generateContent(
+          `Summarize the feedback in 5-6 lines in paragraph dont write in points, keeping all key insights from the given responses but it should be clear what you want to explain: I need feedback only on the required domain.dont give error which are not out of syllabus.be concise dont give like feedback: .. directly start.I want from feeback what user know and lack are written clearly and easy to read \n${feedbackText}`
+        );
+
+        const summarizedFeedback = gptResponse.response.text() || "Summary unavailable.";
+
+        return { ...item, feedback: summarizedFeedback };
+      })
+    );
 
     return new Response(JSON.stringify(formattedData), { status: 200 });
   } catch (err) {

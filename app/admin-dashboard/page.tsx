@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function Dashboard() {
-  const departments = ["Frontend Developer", "Events Manager", "Publicity", "HR", "Finance"];
+  const departments = ["Frontend Developer", "Events Manager", "Backend Developer", "Management Member", "Competitive Coder","Python Devleoper","Java Developer"];
+
   const [clubName, setClubName] = useState("");
 
   useEffect(() => {

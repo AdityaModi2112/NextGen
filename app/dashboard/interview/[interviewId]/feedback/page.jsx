@@ -35,20 +35,18 @@ const Feedback = ({ params }) => {
       .from(UserAnswer)
       .where(eq(UserAnswer.mockIdRef, params.interviewId))
       .orderBy(UserAnswer.id);
-
+  
     setFeedbackList(result);
     setLoading(false);
-
-    // Calculate the average rating dynamically, only including valid ratings
+  
+    // Calculate the average rating, ensuring it's divided by 5
     const validRatings = result
       .map((item) => parseFloat(item.rating))
       .filter((rating) => !isNaN(rating));
-
+  
     const totalRating = validRatings.reduce((sum, rating) => sum + rating, 0);
-    const avgRating = validRatings.length > 0 
-      ? (totalRating / validRatings.length).toFixed(1) 
-      : "N/A";
-
+    const avgRating = (totalRating / 5).toFixed(1); // Always divided by 5
+  
     setAverageRating(avgRating);
   };
 

@@ -80,7 +80,6 @@ const RecordAnswerSection = ({
   };
 
   const StartStopRecording = () => {
-    // (previous recording logic remains the same)
     if (!recognitionRef.current) {
       toast.error("Speech-to-text not supported");
       return;
@@ -89,10 +88,25 @@ const RecordAnswerSection = ({
     if (isRecording) {
       recognitionRef.current.stop();
       toast.info("Recording stopped");
+      clearInterval(timerRef.current); // Clear the timer when recording stops
     } else {
       recognitionRef.current.start();
       setIsRecording(true);
+      setTimer(120); // Reset timer to 2 minutes
       toast.info("Recording started");
+
+      // Start the timer
+      timerRef.current = setInterval(() => {
+        setTimer(prevTimer => {
+          if (prevTimer <= 1) {
+            clearInterval(timerRef.current); // Stop timer when time is up
+            recognitionRef.current.stop();
+            toast.info("Time is up! Recording stopped");
+            return 0;
+          }
+          return prevTimer - 1;
+        });
+      }, 1000);
     }
   };
 
