@@ -159,7 +159,7 @@ function Dashboard() {
         <div className="flex flex-col sm:flex-row items-center justify-between mb-6 space-y-4 sm:space-y-0">
           <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 flex items-center gap-3">
             <Zap size={24} className="text-yellow-500" />
-            Create AI Mock Interview
+            Create Interview
           </h2>
           <button 
             onClick={() => setIsNewInterviewModalOpen(true)}
